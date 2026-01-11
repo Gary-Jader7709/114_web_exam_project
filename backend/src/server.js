@@ -14,8 +14,13 @@ const app = express();
 app.use(express.json());
 app.use(morgan("dev"));
 
-// ✅ 為了 GitHub Pages + 本機 demo：允許所有來源（最省事、作業用夠）
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.CLIENT_ORIGIN,
+    credentials: false,
+  })
+);
+
 
 app.get("/health", (req, res) => {
   res.status(200).json({
