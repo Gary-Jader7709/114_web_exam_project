@@ -1,11 +1,7 @@
-import CalendarPanel from "./CalendarPanel";
-import "./calendar.css";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "./api";
 
-/** A) ✅ 行事曆 import */
 import CalendarPanel from "./CalendarPanel";
-/** A) ✅ 行事曆樣式（格子可自訂顏色） */
 import "./calendar.css";
 
 const THEME_KEY = "todo_theme_calendar_v1";
@@ -48,7 +44,7 @@ const PRESETS = [
     },
   },
   {
-    name: "配色2",
+    name: "配色2(深色)",
     theme: {
       bg: "#0b1220",
       card: "#0f1b2d",
