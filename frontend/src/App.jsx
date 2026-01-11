@@ -1,26 +1,37 @@
+import CalendarPanel from "./CalendarPanel";
+import "./calendar.css";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "./api";
 
-const THEME_KEY = "todo_theme_v3";
+/** A) ✅ 行事曆 import */
+import CalendarPanel from "./CalendarPanel";
+/** A) ✅ 行事曆樣式（格子可自訂顏色） */
+import "./calendar.css";
+
+const THEME_KEY = "todo_theme_calendar_v1";
 
 const PRESETS = [
   {
-    name: "預設（藍）",
+    name: "預設",
     theme: {
       bg: "#f6f7fb",
       card: "#ffffff",
       text: "#111827",
       muted: "#6b7280",
       border: "#e5e7eb",
-      primary: "#6d28d9",     // 你截圖那種紫色感
+      primary: "#6d28d9",
       primaryText: "#ffffff",
       success: "#16a34a",
       danger: "#ef4444",
       chip: "#f3f4f6",
+
+      /** ✅ 日曆格子底色/今日底色（可自訂） */
+      calCellBg: "#ffffff",
+      calTodayBg: "#efe7ff",
     },
   },
   {
-    name: "綠紅（預設）",
+    name: "配色1",
     theme: {
       bg: "#f7faf9",
       card: "#ffffff",
@@ -32,10 +43,12 @@ const PRESETS = [
       success: "#22c55e",
       danger: "#ef4444",
       chip: "#f1f5f9",
+      calCellBg: "#ffffff",
+      calTodayBg: "#e6f0ff",
     },
   },
   {
-    name: "深色（藍黑）",
+    name: "配色2",
     theme: {
       bg: "#0b1220",
       card: "#0f1b2d",
@@ -47,6 +60,8 @@ const PRESETS = [
       success: "#22c55e",
       danger: "#fb7185",
       chip: "#111c2f",
+      calCellBg: "#0f1b2d",
+      calTodayBg: "#162a4a",
     },
   },
 ];
@@ -62,17 +77,6 @@ function loadTheme() {
 }
 function saveTheme(theme) {
   localStorage.setItem(THEME_KEY, JSON.stringify(theme));
-}
-
-function useMediaQuery(query) {
-  const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
-  useEffect(() => {
-    const m = window.matchMedia(query);
-    const onChange = () => setMatches(m.matches);
-    m.addEventListener?.("change", onChange);
-    return () => m.removeEventListener?.("change", onChange);
-  }, [query]);
-  return matches;
 }
 
 function ThemePanel({ theme, setTheme }) {
@@ -96,7 +100,6 @@ function ThemePanel({ theme, setTheme }) {
 
   return (
     <div style={styles.themePanel(theme)}>
-      {/* ✅ 這裡已把深淺色切換按鈕移除，只剩套餐 + 自訂色 */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
         <select value={preset} onChange={onPresetChange} style={styles.select(theme)}>
           {PRESETS.map((p) => (
@@ -110,6 +113,10 @@ function ThemePanel({ theme, setTheme }) {
         <ColorPick label="文字" value={theme.text} onChange={(v) => setField("text", v)} />
         <ColorPick label="已完成" value={theme.success} onChange={(v) => setField("success", v)} />
         <ColorPick label="清除/刪除" value={theme.danger} onChange={(v) => setField("danger", v)} />
+
+        {/* ✅ 日曆格子顏色自訂（像 TimeTree） */}
+        <ColorPick label="日曆格子" value={theme.calCellBg} onChange={(v) => setField("calCellBg", v)} />
+        <ColorPick label="今日底色" value={theme.calTodayBg} onChange={(v) => setField("calTodayBg", v)} />
       </div>
 
       <div style={{ fontSize: 12, color: theme.muted, textAlign: "right" }}>
@@ -146,8 +153,14 @@ export default function App() {
   const [theme, setTheme] = useState(loadTheme());
 
   useEffect(() => {
+    // 把 theme 寫到 CSS variables（calendar.css 會用到）
     const root = document.documentElement;
     Object.entries(theme).forEach(([k, v]) => root.style.setProperty(`--${k}`, v));
+
+    // ✅ calendar.css 會吃這兩個變數
+    root.style.setProperty("--calCellBg", theme.calCellBg || theme.card);
+    root.style.setProperty("--calTodayBg", theme.calTodayBg || theme.chip);
+
     document.body.style.margin = "0";
     document.body.style.background = theme.bg;
     document.body.style.color = theme.text;
@@ -157,15 +170,12 @@ export default function App() {
     saveTheme(theme);
   }, [theme]);
 
-  const isNarrow = useMediaQuery("(max-width: 520px)");
-
   const [todos, setTodos] = useState([]);
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
 
-  // ✅ 新欄位
   const [category, setCategory] = useState("其他");
-  const [customCategory, setCustomCategory] = useState(""); // 只有選「其他」時用
+  const [customCategory, setCustomCategory] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("中");
 
@@ -190,6 +200,13 @@ export default function App() {
 
   const finalCategory =
     category === "其他" ? (customCategory.trim() || "其他") : category;
+
+  /** B) ✅ 點日曆日期 → 自動填入截止日期 + 捲到表單 */
+  function pickDate(dateStr) {
+    setDueDate(dateStr);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    // 你想更爽：也可以加 focus，但要用 ref（之後再加）
+  }
 
   async function onCreate(e) {
     e.preventDefault();
@@ -279,7 +296,7 @@ export default function App() {
         <div>
           <h1 style={{ margin: 0, fontSize: 32 }}>迷你待辦清單</h1>
           <div style={{ marginTop: 6, color: theme.muted }}>
-            類別 / 截止日 / 優先順序（存 MongoDB）+ CRUD + 自訂顏色
+            點行事曆日期 → 直接新增待辦（TimeTree 風格）
           </div>
         </div>
         <ThemePanel theme={theme} setTheme={setTheme} />
@@ -291,7 +308,7 @@ export default function App() {
         </div>
       )}
 
-      <div style={styles.grid(theme, isNarrow)}>
+      <div style={styles.grid(theme)}>
         {/* 左：新增 */}
         <div style={styles.card(theme)}>
           <h2 style={{ marginTop: 0 }}>新增待辦事項</h2>
@@ -317,14 +334,7 @@ export default function App() {
               />
             </div>
 
-            {/* ✅ 這裡就是你說會凸出去的地方：改成 RWD 自動縮進來 */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isNarrow ? "1fr" : "repeat(3, minmax(0, 1fr))",
-                gap: 10,
-              }}
-            >
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
               <div style={{ minWidth: 0 }}>
                 <div style={styles.label(theme)}>類別</div>
                 <select
@@ -362,7 +372,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* ✅ 選「其他」才出現自訂類別 */}
             {category === "其他" && (
               <div>
                 <div style={styles.label(theme)}>自訂類別（選填）</div>
@@ -370,7 +379,7 @@ export default function App() {
                   style={styles.input(theme)}
                   value={customCategory}
                   onChange={(e) => setCustomCategory(e.target.value)}
-                  placeholder="例如：社團 / 家事 / 健身"
+                  placeholder="例如：健身 / 家事 / 社團"
                 />
               </div>
             )}
@@ -396,7 +405,7 @@ export default function App() {
           </form>
         </div>
 
-        {/* 右：清單 */}
+        {/* 右：清單 + 行事曆 */}
         <div style={styles.card(theme)}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
@@ -422,9 +431,15 @@ export default function App() {
             </button>
           </div>
 
-          <div style={{ display: "grid", gap: 10, marginTop: 14 }}>
+          {/* C) ✅ 把行事曆插進來（你要的整合點） */}
+          <div style={{ marginTop: 16 }}>
+            <h3 style={{ margin: "0 0 10px 0" }}>行事曆</h3>
+            <CalendarPanel todos={todos} onPickDate={pickDate} />
+          </div>
+
+          <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
             {filtered.map((t) => (
-              <div key={t._id} style={styles.todoItem(theme, isNarrow)}>
+              <div key={t._id} style={styles.todoItem(theme)}>
                 <div style={{ minWidth: 0 }}>
                   <div
                     style={{
@@ -491,9 +506,9 @@ const styles = {
     marginBottom: 16,
     flexWrap: "wrap",
   }),
-  grid: (t, narrow) => ({
+  grid: (t) => ({
     display: "grid",
-    gridTemplateColumns: narrow ? "1fr" : "420px 1fr",
+    gridTemplateColumns: "420px 1fr",
     gap: 18,
   }),
   card: (t) => ({
@@ -502,7 +517,7 @@ const styles = {
     borderRadius: 18,
     padding: 16,
     boxSizing: "border-box",
-    overflow: "hidden", // ✅ 防止內容凸出去
+    overflow: "hidden",
   }),
   label: (t) => ({
     fontSize: 13,
@@ -517,7 +532,7 @@ const styles = {
     background: "transparent",
     color: t.text,
     outline: "none",
-    boxSizing: "border-box", // ✅ 很關鍵：防爆版
+    boxSizing: "border-box",
     minWidth: 0,
   }),
   select: (t) => ({
@@ -554,7 +569,7 @@ const styles = {
     cursor: "pointer",
     color: t.text,
   }),
-  todoItem: (t, narrow) => ({
+  todoItem: (t) => ({
     display: "flex",
     justifyContent: "space-between",
     gap: 12,
@@ -562,7 +577,6 @@ const styles = {
     border: `1px solid ${t.border}`,
     borderRadius: 14,
     background: "transparent",
-    flexDirection: narrow ? "column" : "row",
   }),
   badge: (t, kind) => {
     if (kind === "done") {

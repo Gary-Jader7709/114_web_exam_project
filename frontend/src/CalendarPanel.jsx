@@ -3,35 +3,51 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
 export default function CalendarPanel({ todos, onPickDate }) {
-  // 把有 dueDate 的 todo 變成日曆事件
   const events = (todos || [])
     .filter((t) => t.dueDate)
-    .map((t) => ({
-      id: t._id,
-      title: t.title,
-      start: t.dueDate, // ISO 字串可直接用
-      allDay: true,
-    }));
+    .map((t) => {
+      const priority = t.priority || "中";
+      const bg =
+        priority === "高"
+          ? "var(--danger)"
+          : priority === "低"
+          ? "var(--muted)"
+          : "var(--primary)";
+
+      return {
+        id: t._id,
+        title: t.title,
+        start: t.dueDate,
+        allDay: true,
+        backgroundColor: bg,
+        borderColor: "transparent",
+      };
+    });
 
   return (
-    <div style={{ overflow: "hidden" }}>
+    <div style={{ border: "1px solid var(--border)", borderRadius: 14, padding: 10 }}>
       <FullCalendar
         plugins={[dayGridPlugin, interactionPlugin]}
         initialView="dayGridMonth"
-        height="auto"
+        height={520}                 // ✅ 直接固定高度，最穩
+        eventDisplay="block"
         headerToolbar={{
           left: "prev,next today",
           center: "title",
-          right: "dayGridMonth",
+          right: "dayGridMonth,dayGridWeek,dayGridDay",
+        }}
+        dayCellClassNames={(arg) => {
+          const d = arg.date.getDay(); // 0 Sunday, 6 Saturday
+          if (d === 0 || d === 6) return ["fc-weekend-cell"];
+          return [];
         }}
         dateClick={(info) => {
-          // info.dateStr 是 yyyy-mm-dd
-          onPickDate(info.dateStr);
+          onPickDate?.(info.dateStr);
         }}
         events={events}
       />
-      <div style={{ marginTop: 8, opacity: 0.8, fontSize: 12 }}>
-        點日期可直接帶入「截止日期」新增待辦。
+      <div style={{ marginTop: 8, opacity: 0.75, fontSize: 12 }}>
+        點日期 → 自動填入「截止日期」，再到左邊直接新增。
       </div>
     </div>
   );

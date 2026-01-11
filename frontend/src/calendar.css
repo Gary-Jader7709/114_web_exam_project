@@ -1,0 +1,72 @@
+/* FullCalendar theme (TimeTree-ish) */
+:root{
+  --calCellBg: var(--card);
+  --calTodayBg: color-mix(in srgb, var(--primary) 18%, transparent);
+  --calWeekendBg: color-mix(in srgb, var(--chip) 55%, transparent);
+}
+
+/* FullCalendar variables */
+.fc{
+  --fc-border-color: var(--border);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: transparent;
+  --fc-today-bg-color: var(--calTodayBg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.fc .fc-scrollgrid{
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--calCellBg);
+}
+
+.fc .fc-daygrid-day-frame{
+  background: var(--calCellBg);
+}
+
+.fc .fc-daygrid-day:hover .fc-daygrid-day-frame{
+  filter: brightness(0.98);
+}
+
+.fc .fc-daygrid-day.fc-weekend-cell .fc-daygrid-day-frame{
+  background: var(--calWeekendBg);
+}
+
+/* Header + buttons (簡單做成像 TimeTree 的乾淨按鈕) */
+.fc .fc-toolbar-title{
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.fc .fc-button{
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 6px 10px;
+}
+.fc .fc-button:hover{
+  background: var(--chip);
+}
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active{
+  background: var(--primary);
+  border-color: transparent;
+  color: var(--primaryText);
+}
+
+/* Event (用 priority 變色) */
+.fc .fc-event{
+  border: none;
+  border-radius: 10px;
+  padding: 2px 6px;
+}
+/* 保底：避免被某些容器搞到高度 0 */
+.fc {
+  width: 100%;
+}
+.fc .fc-view-harness {
+  min-height: 520px;
+}
